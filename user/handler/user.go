@@ -2,23 +2,24 @@ package handler
 
 import (
 	"context"
+	"github.com/869413421/micro-service/user/proto/user"
 
 	log "github.com/micro/go-micro/v2/logger"
 
-	user "user/proto/user"
+	proto "github.com/869413421/micro-service/user/proto/user"
 )
 
 type User struct{}
 
 // Call is a single request handler called via client.Call or the generated client code
-func (e *User) Call(ctx context.Context, req *user.Request, rsp *user.Response) error {
+func (e *User) Call(ctx context.Context, req *proto.Request, rsp *proto.Response) error {
 	log.Info("Received User.Call request")
 	rsp.Msg = "Hello " + req.Name
 	return nil
 }
 
 // Stream is a server side stream handler called via client.Stream or the generated client code
-func (e *User) Stream(ctx context.Context, req *user.StreamingRequest, stream user.User_StreamStream) error {
+func (e *User) Stream(ctx context.Context, req *proto.StreamingRequest, stream proto.User_StreamStream) error {
 	log.Infof("Received User.Stream request with count: %d", req.Count)
 
 	for i := 0; i < int(req.Count); i++ {
@@ -34,7 +35,7 @@ func (e *User) Stream(ctx context.Context, req *user.StreamingRequest, stream us
 }
 
 // PingPong is a bidirectional stream handler called via client.Stream or the generated client code
-func (e *User) PingPong(ctx context.Context, stream user.User_PingPongStream) error {
+func (e *User) PingPong(ctx context.Context, stream proto.User_PingPongStream) error {
 	for {
 		req, err := stream.Recv()
 		if err != nil {

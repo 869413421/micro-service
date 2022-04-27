@@ -1,12 +1,12 @@
 package main
 
 import (
-	log "github.com/micro/go-micro/v2/logger"
+	"github.com/869413421/micro-service/user/handler"
+	"github.com/869413421/micro-service/user/subscriber"
 	"github.com/micro/go-micro/v2"
-	"user/handler"
-	"user/subscriber"
+	log "github.com/micro/go-micro/v2/logger"
 
-	user "user/proto/user"
+	proto "github.com/869413421/micro-service/user/proto/user"
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 	service.Init()
 
 	// Register Handler
-	user.RegisterUserHandler(service.Server(), new(handler.User))
+	proto.RegisterUserHandler(service.Server(), new(handler.User))
 
 	// Register Struct as Subscriber
 	micro.RegisterSubscriber("micro.service.user", service.Server(), new(subscriber.User))

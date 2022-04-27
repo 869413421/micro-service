@@ -15,8 +15,6 @@ services:
       ETCD_INITIAL_CLUSTER_TOKEN: "etcd-cluster"
       ETCD_INITIAL_CLUSTER: "etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380"
       ETCD_INITIAL_CLUSTER_STATE: "new"
-    volumes:
-      - ./data/etcd1:/bitnami/etcd
     ports:
       - 23791:2379
       - 23801:2380
@@ -36,8 +34,6 @@ services:
       ETCD_INITIAL_CLUSTER_TOKEN: "etcd-cluster"
       ETCD_INITIAL_CLUSTER: "etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380"
       ETCD_INITIAL_CLUSTER_STATE: "new"
-    volumes:
-      - ./data/etcd2:/bitnami/etcd
     ports:
       - 23792:2379
       - 23802:2380
@@ -57,8 +53,6 @@ services:
       ETCD_INITIAL_CLUSTER_TOKEN: "etcd-cluster"
       ETCD_INITIAL_CLUSTER: "etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380"
       ETCD_INITIAL_CLUSTER_STATE: "new"
-    volumes:
-      - ./data/etcd3:/bitnami/etcd
     ports:
       - 23793:2379
       - 23803:2380
@@ -87,6 +81,22 @@ services:
     command: web
     networks:
       - micro-network
+
+  micro-user-service:
+    depends_on: # 启动依赖，需要等etcd集群启动后才启动当前容器
+      - etcd1
+      - etcd2
+      - etcd3
+    build: ./user # dockerfile所在目录
+    environment:
+      MICRO_SERVER_ADDRESS: ":9091" # 服务端口
+      MICRO_REGISTRY: "etcd" # 注册中心类型
+      MICRO_REGISTRY_ADDRESS: "etcd1:2379,etcd2:2379,etcd3:2379" # 注册中心集群地址
+    ports:
+      - 9092:9091
+    networks:
+      - micro-network
+
 networks:
   micro-network:
     external: true
