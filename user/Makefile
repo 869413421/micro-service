@@ -11,7 +11,7 @@ proto:
 .PHONY: build
 build: proto
 
-	go build -o user-service *.go
+	CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-w' -i -o micro-user-service ./main.go
 
 .PHONY: test
 test:
