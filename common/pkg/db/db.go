@@ -10,7 +10,9 @@ import (
 )
 
 type BaseModel struct {
-	gorm.Model
+	ID        uint64    "gorm:column:id;primaryKey;autoIncrement;not null"
+	CreatedAt time.Time `gorm:"column:created_at;index"`
+	UpdatedAt time.Time `gorm:"column:updated_at;index"`
 }
 
 //GetStringID 主键转字符串
@@ -84,18 +86,6 @@ func GetDB() *gorm.DB {
 		setupDB()
 	}
 
-	//2.ping数据库链接
-	sqlDB, err := gormDb.DB()
-	if err != nil {
-		panic(err)
-	}
-
-	//3.如果链接不通，重新初始化
-	if err := sqlDB.Ping(); err != nil {
-		sqlDB.Close()
-		setupDB()
-	}
-
-	//4.返回db对象给外部使用
+	//2.返回db对象给外部使用
 	return gormDb
 }
