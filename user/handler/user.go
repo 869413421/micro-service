@@ -2,48 +2,128 @@ package handler
 
 import (
 	"context"
-	"github.com/869413421/micro-service/user/proto/user"
-
-	log "github.com/micro/go-micro/v2/logger"
-
-	proto "github.com/869413421/micro-service/user/proto/user"
+	"github.com/869413421/micro-service/common/pkg/types"
+	"github.com/869413421/micro-service/user/pkg/model"
+	"github.com/869413421/micro-service/user/pkg/repo"
+	pb "github.com/869413421/micro-service/user/proto/user"
+	"github.com/micro/go-micro/v2/errors"
+	"gorm.io/gorm"
 )
 
-type User struct{}
+//UserServiceHandler 用户服务处理器
+type UserServiceHandler struct {
+	UserRepo repo.UserRepositoryInterface
+}
 
-// Call is a single request handler called via client.Call or the generated client code
-func (e *User) Call(ctx context.Context, req *proto.Request, rsp *proto.Response) error {
-	log.Info("Received User.Call request")
-	rsp.Msg = "Hello " + req.Name
+// NewUserServiceHandler 用户服务初始化
+func NewUserServiceHandler() *UserServiceHandler {
+	return &UserServiceHandler{
+		UserRepo: repo.NewUserRepository(),
+	}
+}
+
+// Pagination 分页
+func (srv *UserServiceHandler) Pagination(ctx context.Context, req *pb.PaginationRequest, rsp *pb.PaginationResponse) error {
+	// 1.查找分页数据
+	users, pagerData, err := srv.UserRepo.Pagination(req.Page, req.PerPage)
+	if err != nil {
+		return errors.InternalServerError("user.Pagination.Pagination.Error", err.Error())
+	}
+
+	// 2.构造用户列表
+	userItems := make([]*pb.User, len(users))
+	for index, user := range users {
+		userItem := user.ToProtobuf()
+		userItems[index] = userItem
+	}
+
+	// 3.返回用户信息
+	rsp.Users = userItems
+	rsp.Total = pagerData.TotalCount
 	return nil
 }
 
-// Stream is a server side stream handler called via client.Stream or the generated client code
-func (e *User) Stream(ctx context.Context, req *proto.StreamingRequest, stream proto.User_StreamStream) error {
-	log.Infof("Received User.Stream request with count: %d", req.Count)
-
-	for i := 0; i < int(req.Count); i++ {
-		log.Infof("Responding: %d", i)
-		if err := stream.Send(&user.StreamingResponse{
-			Count: int64(i),
-		}); err != nil {
-			return err
-		}
+// Get 根据ID获取数据
+func (srv *UserServiceHandler) Get(ctx context.Context, req *pb.GetRequest, rsp *pb.UserResponse) error {
+	// 1.查找用户
+	user, err := srv.UserRepo.GetByID(req.GetId())
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
+	if err == gorm.ErrRecordNotFound {
+		return errors.BadRequest("User.GetByID", "user not found")
 	}
 
+	// 2.返回用户信息
+	rsp.User = user.ToProtobuf()
 	return nil
 }
 
-// PingPong is a bidirectional stream handler called via client.Stream or the generated client code
-func (e *User) PingPong(ctx context.Context, stream proto.User_PingPongStream) error {
-	for {
-		req, err := stream.Recv()
-		if err != nil {
-			return err
-		}
-		log.Infof("Got ping %v", req.Stroke)
-		if err := stream.Send(&user.Pong{Stroke: req.Stroke}); err != nil {
-			return err
-		}
+// Create 创建用户
+func (srv *UserServiceHandler) Create(ctx context.Context, req *pb.CreateRequest, rsp *pb.UserResponse) error {
+	// 1.填充提交信息
+	user := &model.User{}
+	types.Fill(user, req)
+
+	// 2.创建用户
+	err := user.Store()
+	if err != nil {
+		return err
 	}
+
+	// 3.返回用户信息
+	rsp.User = user.ToProtobuf()
+	return nil
+}
+
+// Update 更新用户信息
+func (srv *UserServiceHandler) Update(ctx context.Context, req *pb.UpdateRequest, rsp *pb.UserResponse) error {
+	// 1.获取用户
+	id := req.Id
+	_user, err := srv.UserRepo.GetByID(id)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
+	if err == gorm.ErrRecordNotFound {
+		return errors.NotFound("User.Update.GetUserByID.Error", "user not found ,check you request id")
+	}
+
+	// 2.验证提交信息
+	types.Fill(_user, req)
+
+	// 3.更新用户
+	rowsAffected, err := _user.Update()
+	if rowsAffected == 0 || err != nil {
+		return errors.InternalServerError("User.Update.Update.Error", err.Error())
+	}
+
+	// 4.返回更新信息
+	rsp.User = _user.ToProtobuf()
+	return nil
+}
+
+// Delete 删除用户
+func (srv *UserServiceHandler) Delete(ctx context.Context, req *pb.DeleteRequest, rsp *pb.UserResponse) error {
+	// 1.获取用户
+	id := req.Id
+	_user, err := srv.UserRepo.GetByID(id)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
+	if err == gorm.ErrRecordNotFound {
+		return errors.NotFound("User.Delete.GetUserByID.Error", "user not found ,check you request id")
+	}
+
+	// 2.删除用户
+	rowsAffected, err := _user.Delete()
+	if err != nil {
+		return errors.InternalServerError("User.Delete.Delete.Error", err.Error())
+	}
+	if rowsAffected == 0 {
+		return errors.BadRequest("User.Delete.Delete.Fail", "update fail")
+	}
+
+	// 3.返回更新信息
+	rsp.User = _user.ToProtobuf()
+	return nil
 }

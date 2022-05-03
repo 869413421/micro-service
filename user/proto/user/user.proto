@@ -3,36 +3,67 @@ syntax = "proto3";
 package micro.service.user;
 option go_package = "proto/user";
 
-service User {
-	rpc Call(Request) returns (Response) {}
-	rpc Stream(StreamingRequest) returns (stream StreamingResponse) {}
-	rpc PingPong(stream Ping) returns (stream Pong) {}
+service UserService {
+  rpc Pagination(PaginationRequest) returns(PaginationResponse){}
+  rpc Get(GetRequest) returns(UserResponse){}
+  rpc Create(CreateRequest) returns(UserResponse){}
+  rpc Update(UpdateRequest) returns(UserResponse){}
+  rpc Delete(DeleteRequest) returns(UserResponse){}
 }
 
-message Message {
-	string say = 1;
+message User{
+  uint64 id = 1;
+  string name = 3;
+  string email = 4;
+  string real_name = 6;
+  string avatar = 7;
+  string create_at = 9;
+  string update_at = 10;
 }
 
-message Request {
-	string name = 1;
+//UserResponse 单个用户响应
+message UserResponse{
+  User user = 1;
 }
 
-message Response {
-	string msg = 1;
+//PaginationResponse 用户分页数据响应
+message PaginationResponse{
+  repeated User users = 1;
+  uint64 total = 2;
 }
 
-message StreamingRequest {
-	int64 count = 1;
+//PaginationRequest 用户分页请求
+message PaginationRequest{
+  uint64 page = 1;
+  uint32 perPage = 2;
 }
 
-message StreamingResponse {
-	int64 count = 1;
+//GetRequest 获取单个用户请求
+message GetRequest{
+  uint64 id = 1;
 }
 
-message Ping {
-	int64 stroke = 1;
+//CreateRequest 创建用户请求
+message CreateRequest{
+  string name = 1;
+  string password = 2;
+  string email = 3;
+  string real_name = 4;
+  string avatar = 5;
 }
 
-message Pong {
-	int64 stroke = 1;
+//UpdateRequest 更新用户请求
+message UpdateRequest{
+  uint64 id = 1;
+  string name = 2;
+  string email = 3;
+  string real_name = 4;
+  string avatar = 6;
 }
+
+//DeleteRequest 删除用户请求
+message DeleteRequest{
+  uint64 id = 1;
+}
+
+
