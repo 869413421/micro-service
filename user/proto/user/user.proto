@@ -11,6 +11,8 @@ service UserService {
   rpc Delete(DeleteRequest) returns(UserResponse){}
   rpc Auth(AuthRequest) returns(TokenResponse){}
   rpc ValidateToken(TokenRequest) returns(TokenResponse){}
+  rpc CreatePasswordReset(CreatePasswordResetRequest) returns(PasswordReset){}
+  rpc ResetPassword(ResetPasswordRequest) returns(ResetPasswordResponse){}
 }
 
 message User{
@@ -83,6 +85,30 @@ message TokenRequest{
 message TokenResponse{
   string token = 1;
   bool valid = 2;
+}
+
+// PasswordReset 重置密码记录
+message PasswordReset{
+  uint64 id = 1;
+  string email = 2;
+  string token = 3;
+  string create_at = 4;
+}
+
+// CreatePasswordResetRequest 创建重置密码请求
+message CreatePasswordResetRequest{
+  string email = 1;
+}
+
+// ResetPasswordRequest 重置密码请求
+message ResetPasswordRequest{
+  string token = 1 ;
+}
+
+// ResetPasswordResponse 重置密码相应
+message ResetPasswordResponse{
+  bool resetSuccess = 1;
+  string newPassword = 2;
 }
 
 

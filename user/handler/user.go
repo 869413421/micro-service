@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"github.com/869413421/micro-service/common/pkg/password"
 	"github.com/869413421/micro-service/common/pkg/types"
 	"github.com/869413421/micro-service/user/pkg/model"
 	"github.com/869413421/micro-service/user/pkg/repo"
@@ -11,19 +12,22 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"log"
+	"time"
 )
 
 //UserServiceHandler 用户服务处理器
 type UserServiceHandler struct {
-	UserRepo     repo.UserRepositoryInterface
-	TokenService service.Authble
+	UserRepo        repo.UserRepositoryInterface
+	TokenService    service.Authble
+	PasswordService service.PasswordResetServiceInterface
 }
 
 // NewUserServiceHandler 用户服务初始化
 func NewUserServiceHandler() *UserServiceHandler {
 	return &UserServiceHandler{
-		UserRepo:     repo.NewUserRepository(),
-		TokenService: service.NewTokenService(),
+		UserRepo:        repo.NewUserRepository(),
+		TokenService:    service.NewTokenService(),
+		PasswordService: service.NewPasswordResetService(),
 	}
 }
 
@@ -178,5 +182,42 @@ func (srv *UserServiceHandler) ValidateToken(ctx context.Context, req *pb.TokenR
 	// 3.返回验证状态
 	rsp.Token = req.Token
 	rsp.Valid = true
+	return nil
+}
+
+// CreatePasswordReset 创建密码重置记录
+func (srv *UserServiceHandler) CreatePasswordReset(ctx context.Context, req *pb.CreatePasswordResetRequest, rsp *pb.PasswordReset) error {
+	//1.获取提交邮箱,检查用户是否存在
+	_, err := srv.UserRepo.GetByEmail(req.Email)
+	if err != nil {
+		return errors.NotFound("User.CreatePasswordReset.GetByEmail.Error", "user not found ,check you email")
+	}
+
+	passwordReset := &model.PasswordReset{}
+	types.Fill(passwordReset, req)
+
+	//2.生成md5保存到数据库
+	passwordReset.Token = password.Md5Str(req.Email + time.Now().String())
+	err = passwordReset.Store()
+	if err != nil {
+		return err
+	}
+
+	//3.返回响应信息
+	types.Fill(rsp, passwordReset)
+	return nil
+}
+
+// ResetPassword 重置密码
+func (srv *UserServiceHandler) ResetPassword(ctx context.Context, req *pb.ResetPasswordRequest, rsp *pb.ResetPasswordResponse) error {
+	//1.执行重置逻辑
+	newPassword, err := srv.PasswordService.Reset(req.Token)
+	if err != nil {
+		return err
+	}
+
+	//2.返回新密码
+	rsp.ResetSuccess = true
+	rsp.NewPassword = newPassword
 	return nil
 }
