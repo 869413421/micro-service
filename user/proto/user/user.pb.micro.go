@@ -47,6 +47,8 @@ type UserService interface {
 	Create(ctx context.Context, in *CreateRequest, opts ...client.CallOption) (*UserResponse, error)
 	Update(ctx context.Context, in *UpdateRequest, opts ...client.CallOption) (*UserResponse, error)
 	Delete(ctx context.Context, in *DeleteRequest, opts ...client.CallOption) (*UserResponse, error)
+	Auth(ctx context.Context, in *AuthRequest, opts ...client.CallOption) (*TokenResponse, error)
+	ValidateToken(ctx context.Context, in *TokenRequest, opts ...client.CallOption) (*TokenResponse, error)
 }
 
 type userService struct {
@@ -111,6 +113,26 @@ func (c *userService) Delete(ctx context.Context, in *DeleteRequest, opts ...cli
 	return out, nil
 }
 
+func (c *userService) Auth(ctx context.Context, in *AuthRequest, opts ...client.CallOption) (*TokenResponse, error) {
+	req := c.c.NewRequest(c.name, "UserService.Auth", in)
+	out := new(TokenResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userService) ValidateToken(ctx context.Context, in *TokenRequest, opts ...client.CallOption) (*TokenResponse, error) {
+	req := c.c.NewRequest(c.name, "UserService.ValidateToken", in)
+	out := new(TokenResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for UserService service
 
 type UserServiceHandler interface {
@@ -119,6 +141,8 @@ type UserServiceHandler interface {
 	Create(context.Context, *CreateRequest, *UserResponse) error
 	Update(context.Context, *UpdateRequest, *UserResponse) error
 	Delete(context.Context, *DeleteRequest, *UserResponse) error
+	Auth(context.Context, *AuthRequest, *TokenResponse) error
+	ValidateToken(context.Context, *TokenRequest, *TokenResponse) error
 }
 
 func RegisterUserServiceHandler(s server.Server, hdlr UserServiceHandler, opts ...server.HandlerOption) error {
@@ -128,6 +152,8 @@ func RegisterUserServiceHandler(s server.Server, hdlr UserServiceHandler, opts .
 		Create(ctx context.Context, in *CreateRequest, out *UserResponse) error
 		Update(ctx context.Context, in *UpdateRequest, out *UserResponse) error
 		Delete(ctx context.Context, in *DeleteRequest, out *UserResponse) error
+		Auth(ctx context.Context, in *AuthRequest, out *TokenResponse) error
+		ValidateToken(ctx context.Context, in *TokenRequest, out *TokenResponse) error
 	}
 	type UserService struct {
 		userService
@@ -158,4 +184,12 @@ func (h *userServiceHandler) Update(ctx context.Context, in *UpdateRequest, out 
 
 func (h *userServiceHandler) Delete(ctx context.Context, in *DeleteRequest, out *UserResponse) error {
 	return h.UserServiceHandler.Delete(ctx, in, out)
+}
+
+func (h *userServiceHandler) Auth(ctx context.Context, in *AuthRequest, out *TokenResponse) error {
+	return h.UserServiceHandler.Auth(ctx, in, out)
+}
+
+func (h *userServiceHandler) ValidateToken(ctx context.Context, in *TokenRequest, out *TokenResponse) error {
+	return h.UserServiceHandler.ValidateToken(ctx, in, out)
 }

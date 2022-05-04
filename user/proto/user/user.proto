@@ -9,6 +9,8 @@ service UserService {
   rpc Create(CreateRequest) returns(UserResponse){}
   rpc Update(UpdateRequest) returns(UserResponse){}
   rpc Delete(DeleteRequest) returns(UserResponse){}
+  rpc Auth(AuthRequest) returns(TokenResponse){}
+  rpc ValidateToken(TokenRequest) returns(TokenResponse){}
 }
 
 message User{
@@ -64,6 +66,23 @@ message UpdateRequest{
 //DeleteRequest 删除用户请求
 message DeleteRequest{
   uint64 id = 1;
+}
+
+//AuthRequest 登录请求
+message AuthRequest{
+  string email = 1;
+  string password = 2;
+}
+
+//TokenRequest token验证接口
+message TokenRequest{
+  string token = 1;
+}
+
+//TokenResponse token响应接口
+message TokenResponse{
+  string token = 1;
+  bool valid = 2;
 }
 
 

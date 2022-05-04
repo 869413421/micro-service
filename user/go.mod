@@ -10,8 +10,10 @@ replace github.com/869413421/micro-service/common => ../common
 
 require (
 	github.com/869413421/micro-service/common v0.0.0-20220428152058-528eea77a565
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/golang/protobuf v1.5.2
 	github.com/micro/go-micro/v2 v2.9.1
+	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f
 	google.golang.org/protobuf v1.28.0
 	gorm.io/gorm v1.23.5
 )

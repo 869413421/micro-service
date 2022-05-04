@@ -6,19 +6,24 @@ import (
 	"github.com/869413421/micro-service/user/pkg/model"
 	"github.com/869413421/micro-service/user/pkg/repo"
 	pb "github.com/869413421/micro-service/user/proto/user"
+	"github.com/869413421/micro-service/user/service"
 	"github.com/micro/go-micro/v2/errors"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"log"
 )
 
 //UserServiceHandler 用户服务处理器
 type UserServiceHandler struct {
-	UserRepo repo.UserRepositoryInterface
+	UserRepo     repo.UserRepositoryInterface
+	TokenService service.Authble
 }
 
 // NewUserServiceHandler 用户服务初始化
 func NewUserServiceHandler() *UserServiceHandler {
 	return &UserServiceHandler{
-		UserRepo: repo.NewUserRepository(),
+		UserRepo:     repo.NewUserRepository(),
+		TokenService: service.NewTokenService(),
 	}
 }
 
@@ -125,5 +130,53 @@ func (srv *UserServiceHandler) Delete(ctx context.Context, req *pb.DeleteRequest
 
 	// 3.返回更新信息
 	rsp.User = _user.ToProtobuf()
+	return nil
+}
+
+// Auth 认证获取token
+func (srv UserServiceHandler) Auth(ctx context.Context, req *pb.AuthRequest, rsp *pb.TokenResponse) error {
+	// 1.根据邮箱回去用户
+	log.Println("Logging in with:", req.Email, req.Password)
+	user, err := srv.UserRepo.GetByEmail(req.Email)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
+	if err == gorm.ErrRecordNotFound {
+		return errors.NotFound("User.Auth.GetByEmail.Error", "user not found ,check you password or email")
+	}
+
+	// 2.检验用户密码
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
+	if err != nil {
+		return errors.Unauthorized("User.Auth.CheckPassword.Error", err.Error())
+	}
+
+	// 3.生成token
+	token, err := srv.TokenService.Encode(user)
+	if err != nil {
+		return err
+	}
+
+	// 4.返回token字符串
+	rsp.Token = token
+	return nil
+}
+
+// ValidateToken 验证token
+func (srv *UserServiceHandler) ValidateToken(ctx context.Context, req *pb.TokenRequest, rsp *pb.TokenResponse) error {
+	// 1.将token字符串转换为token对象
+	claims, err := srv.TokenService.Decode(req.Token)
+	if err != nil {
+		return err
+	}
+
+	// 2.判断转换是否成功
+	if claims.User.ID == 0 {
+		return errors.BadRequest("User.ValidateToken.Error", "user invalid")
+	}
+
+	// 3.返回验证状态
+	rsp.Token = req.Token
+	rsp.Valid = true
 	return nil
 }
