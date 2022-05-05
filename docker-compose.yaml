@@ -116,6 +116,20 @@ services:
     networks:
       - micro-network
 
+  micro-user-api:
+    build: ./user-api
+    depends_on:
+      - -user-service
+    volumes:
+      - ./user-api:/app
+    ports:
+      - 81:81
+    environment:
+      MICRO_REGISTRY: "etcd"
+      MICRO_REGISTRY_ADDRESS: "etcd1:2379,etcd2:2379,etcd3:2379"
+    networks:
+      - micro-network
+
   micro-user-db:
     image: mysql:${MYSQL_VERSION}
     ports:
