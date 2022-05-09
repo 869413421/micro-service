@@ -73,6 +73,19 @@ services:
     restart: always
     networks:
       - micro-network
+
+
+  micro-api:
+    container_name: micro-api
+    image: micro/micro:v2.9.3
+    ports:
+      - 8080:8080
+    environment:
+      MICRO_REGISTRY: "etcd"
+      MICRO_REGISTRY_ADDRESS: "etcd1:2379,etcd2:2379,etcd3:2379"
+    command: api --handler=http --namespace=micro.api
+    networks:
+      - micro-network
       
   micro-web:
     container_name: micro-web
@@ -119,7 +132,7 @@ services:
   micro-user-api:
     build: ./user-api
     depends_on:
-      - -user-service
+      - micro-user-service
     volumes:
       - ./user-api:/app
     ports:
